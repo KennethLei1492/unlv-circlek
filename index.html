@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>UNLV Circle K International — Moonlight Division</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    :root {
+      --forest:   #1a3a2a;
+      --moss:     #2d5a3d;
+      --fern:     #4a8c5c;
+      --sage:     #7ab893;
+      --mist:     #c8dfd0;
+      --cream:    #f5f0e8;
+      --earth:    #8b6f47;
+      --gold:     #d4a843;
+      --moonlight:#e8f4ec;
+      --ink:      #1c2b22;
+      --white:    #ffffff;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--cream);
+      color: var(--ink);
+      overflow-x: hidden;
+    }
+
+    /* ── 3D CANVAS ── */
+    #hero-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+      cursor: grab;
+    }
+    #hero-canvas:active { cursor: grabbing; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(26,58,42,0.88);
+      backdrop-filter: blur(16px);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 3rem;
+      height: 68px;
+      border-bottom: 1px solid rgba(122,184,147,0.18);
+      transition: background 0.4s;
+    }
+    .nav-logo {
+      font-family: 'Playfair Display', serif;
+      color: var(--sage);
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      line-height: 1.2;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-links { display: flex; gap: 2.2rem; list-style: none; }
+    .nav-links a {
+      color: var(--mist);
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      transition: color 0.25s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content:''; position:absolute; bottom:-4px; left:0; right:0; height:1px;
+      background: var(--gold); transform: scaleX(0); transform-origin:left;
+      transition: transform 0.3s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-links a:hover::after { transform: scaleX(1); }
+    .nav-socials { display: flex; gap: 0.8rem; }
+    .nav-socials a {
+      color: var(--sage); font-size: 0.78rem; text-decoration: none;
+      border: 1px solid rgba(122,184,147,0.3); padding: 4px 12px;
+      border-radius: 20px; transition: all 0.25s; font-weight: 500;
+    }
+    .nav-socials a:hover { background: var(--fern); color: var(--white); border-color: var(--fern); }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      height: 100vh; min-height: 640px;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      text-align: center;
+      overflow: hidden;
+      background: linear-gradient(160deg, #0d2016 0%, #0a1c12 60%, #0e2318 100%);
+    }
+    .hero-content {
+      position: relative; z-index: 10;
+      display: flex; flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    .hero-content a, .hero-content button { pointer-events: auto; }
+    .hero-badge {
+      display: inline-block;
+      border: 1px solid rgba(212,168,67,0.55);
+      color: var(--gold);
+      font-size: 0.68rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      border-radius: 30px;
+      margin-bottom: 1.4rem;
+      animation: fadeUp 1s ease both;
+      backdrop-filter: blur(4px);
+      background: rgba(212,168,67,0.06);
+    }
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      color: var(--white);
+      font-size: clamp(2.8rem, 7vw, 5.8rem);
+      line-height: 1.06;
+      letter-spacing: -0.01em;
+      animation: fadeUp 1s 0.15s ease both;
+      text-shadow: 0 4px 40px rgba(0,0,0,0.5);
+    }
+    .hero-title em { color: var(--sage); font-style: italic; }
+    .hero-sub {
+      color: var(--mist);
+      font-size: 1.05rem;
+      font-weight: 300;
+      max-width: 500px;
+      margin: 1.4rem auto 0;
+      line-height: 1.75;
+      animation: fadeUp 1s 0.3s ease both;
+      text-shadow: 0 2px 20px rgba(0,0,0,0.4);
+    }
+    .hero-cta {
+      display: inline-flex; gap: 1rem;
+      margin-top: 2.5rem;
+      animation: fadeUp 1s 0.45s ease both;
+    }
+    .btn-primary {
+      background: var(--fern); color: var(--white);
+      padding: 13px 30px; border-radius: 40px;
+      text-decoration: none; font-weight: 600;
+      font-size: 0.88rem; letter-spacing: 0.05em;
+      transition: background 0.25s, transform 0.2s, box-shadow 0.25s;
+      box-shadow: 0 4px 24px rgba(74,140,92,0.35);
+    }
+    .btn-primary:hover { background: var(--moss); transform: translateY(-3px); box-shadow: 0 8px 32px rgba(74,140,92,0.45); }
+    .btn-outline {
+      border: 1.5px solid rgba(200,223,208,0.4);
+      color: var(--mist); padding: 13px 30px; border-radius: 40px;
+      text-decoration: none; font-weight: 500;
+      font-size: 0.88rem; letter-spacing: 0.05em;
+      transition: all 0.25s; backdrop-filter: blur(4px);
+    }
+    .btn-outline:hover { background: rgba(200,223,208,0.12); border-color: var(--sage); }
+    .scroll-hint {
+      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      color: var(--sage); font-size: 0.7rem; letter-spacing: 0.18em;
+      text-transform: uppercase;
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      animation: fadeUp 1s 1s ease both; z-index: 10;
+    }
+    .scroll-hint::after {
+      content: ''; width: 1px; height: 44px;
+      background: linear-gradient(to bottom, var(--sage), transparent);
+      animation: scrollLine 1.8s ease-in-out infinite;
+    }
+    @keyframes scrollLine { 0%,100%{opacity:1;transform:scaleY(1)} 50%{opacity:0.25;transform:scaleY(0.6)} }
+    @keyframes fadeUp {
+      from { opacity:0; transform: translateY(28px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* ── 3D TOOLTIP ── */
+    #tree-tooltip {
+      position: fixed; z-index: 300;
+      background: rgba(26,58,42,0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(122,184,147,0.3);
+      color: var(--mist);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    /* ── SECTION COMMON ── */
+    section { position: relative; overflow: hidden; }
+    .section-inner { max-width: 1100px; margin: 0 auto; padding: 5.5rem 2rem; }
+    .section-label {
+      display: inline-flex; align-items: center; gap: 10px;
+      color: var(--fern); font-size: 0.7rem;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      font-weight: 600; margin-bottom: 1rem;
+    }
+    .section-label::before { content:''; width:28px; height:2px; background:var(--fern); }
+    h2.section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 4.5vw, 3.2rem);
+      color: var(--forest); line-height: 1.15; margin-bottom: 1.4rem;
+    }
+
+    /* ── ABOUT ── */
+    #about { background: var(--moonlight); }
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 5rem; align-items: center;
+    }
+    .about-text p {
+      color: #3a5244; font-size: 1rem;
+      line-height: 1.82; font-weight: 300; margin-bottom: 1.2rem;
+    }
+    .about-pillars { display: flex; flex-direction: column; gap: 1.2rem; }
+    .pillar-card {
+      background: var(--white);
+      border-left: 4px solid var(--fern);
+      padding: 1.2rem 1.5rem;
+      border-radius: 0 14px 14px 0;
+      box-shadow: 0 4px 24px rgba(26,58,42,0.07);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .pillar-card:hover { transform: translateX(8px) translateY(-2px); box-shadow: 0 8px 36px rgba(26,58,42,0.13); }
+    .pillar-card h4 { font-family: 'Playfair Display', serif; color: var(--forest); font-size: 1.08rem; margin-bottom: 0.3rem; }
+    .pillar-card p { color: #5a7a66; font-size: 0.9rem; line-height: 1.6; margin:0; }
+    .pillar-card:nth-child(2) { border-color: var(--gold); }
+    .pillar-card:nth-child(3) { border-color: var(--earth); }
+
+    /* floating nature particles in sections */
+    .particle-bg {
+      position: absolute; top:0; left:0; right:0; bottom:0;
+      pointer-events: none; overflow: hidden; z-index: 0;
+    }
+    .section-inner { position: relative; z-index: 1; }
+
+    /* ── EVENTS ── */
+    #events { background: var(--forest); }
+    #events .section-label { color: var(--sage); }
+    #events .section-label::before { background: var(--sage); }
+    #events h2.section-title { color: var(--white); }
+    .week-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 1.2rem; margin-top: 2.5rem;
+    }
+    .day-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(122,184,147,0.14);
+      border-radius: 18px; padding: 1.5rem;
+      transition: background 0.3s, transform 0.3s, box-shadow 0.3s;
+      cursor: default;
+    }
+    .day-card:hover {
+      background: rgba(255,255,255,0.09);
+      transform: translateY(-6px) scale(1.02);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.25);
+    }
+    .day-date { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold); line-height: 1; margin-bottom: 0.3rem; }
+    .day-name { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--sage); margin-bottom: 1rem; }
+    .day-events { list-style: none; }
+    .day-events li { color: var(--mist); font-size: 0.88rem; line-height: 1.5; padding: 0.45rem 0; border-top: 1px solid rgba(122,184,147,0.1); }
+    .day-events li:first-child { border-top: none; }
+    .no-event { color: rgba(200,223,208,0.3) !important; font-style: italic; }
+
+    /* ── BOARD ── */
+    #board { background: var(--cream); }
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.8rem; margin-top: 2.5rem;
+    }
+    .member-card { text-align: center; position: relative; }
+    .member-avatar {
+      width: 130px; height: 130px; border-radius: 50%;
+      margin: 0 auto 1rem; display: block;
+      border: 3px solid var(--mist);
+      transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+      overflow: hidden; position: relative;
+    }
+    .member-card:hover .member-avatar {
+      border-color: var(--fern);
+      transform: translateY(-4px) scale(1.04);
+      box-shadow: 0 12px 36px rgba(74,140,92,0.25);
+    }
+    .member-name { font-family: 'Playfair Display', serif; color: var(--forest); font-size: 1.05rem; margin-bottom: 0.2rem; }
+    .member-role { color: var(--fern); font-size: 0.76rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+
+    /* ── 3D VIEWER SECTION ── */
+    #viewer-section {
+      background: linear-gradient(180deg, var(--moonlight) 0%, #d0e8d8 100%);
+      text-align: center;
+    }
+    #viewer-section h2.section-title { color: var(--forest); }
+    #viewer-section .section-label { color: var(--fern); }
+    #viewer-section .section-label::before { background: var(--fern); }
+    #mini-canvas-wrap {
+      width: 100%; max-width: 780px;
+      height: 380px; margin: 2rem auto 0;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid rgba(74,140,92,0.2);
+      box-shadow: 0 20px 80px rgba(26,58,42,0.18), 0 4px 16px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    #mini-canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+    #mini-canvas:active { cursor: grabbing; }
+    .viewer-hint {
+      margin-top: 1rem;
+      color: var(--fern);
+      font-size: 0.76rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* ── GALLERY ── */
+    #gallery { background: var(--moonlight); }
+    .gallery-masonry { columns: 3 220px; gap: 1rem; margin-top: 2.5rem; }
+    .gallery-item {
+      break-inside: avoid; margin-bottom: 1rem;
+      border-radius: 16px; overflow: hidden;
+      position: relative; cursor: pointer;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .gallery-item:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(26,58,42,0.2); }
+    .gallery-ph {
+      width: 100%; display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.55); font-family: 'Playfair Display', serif;
+      font-style: italic; font-size: 0.9rem; transition: transform 0.4s;
+    }
+    .gallery-item:hover .gallery-ph { transform: scale(1.04); }
+
+    /* ── JOIN BANNER ── */
+    #join {
+      background: linear-gradient(135deg, var(--moss) 0%, #0e2318 100%);
+      text-align: center;
+    }
+    #join h2.section-title { color: var(--white); margin: 0 auto 1rem; }
+    #join p { color: var(--mist); font-size: 1.02rem; font-weight: 300; max-width: 520px; margin: 0 auto 2rem; line-height: 1.75; }
+
+    /* ── CONTACT ── */
+    #contact { background: var(--cream); }
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+    .contact-info p { color: #4a6a55; line-height: 1.8; font-size: 0.98rem; margin-bottom: 0.8rem; }
+    .contact-info a { color: var(--fern); text-decoration: none; }
+    .contact-info a:hover { text-decoration: underline; }
+    .socials-list { display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1.5rem; }
+    .social-link {
+      display: flex; align-items: center; gap: 0.75rem;
+      color: var(--forest); text-decoration: none;
+      font-size: 0.88rem; font-weight: 500; transition: color 0.2s;
+    }
+    .social-link:hover { color: var(--fern); }
+    .social-icon {
+      width: 36px; height: 36px; background: var(--moonlight);
+      border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-size: 0.85rem;
+      border: 1px solid var(--mist);
+    }
+    form { display: flex; flex-direction: column; gap: 1rem; }
+    form input, form textarea {
+      border: 1.5px solid var(--mist); border-radius: 10px;
+      padding: 12px 16px; font-family: 'Jost', sans-serif;
+      font-size: 0.94rem; background: var(--white);
+      color: var(--ink); transition: border-color 0.2s, box-shadow 0.2s; outline: none; resize: vertical;
+    }
+    form input:focus, form textarea:focus { border-color: var(--fern); box-shadow: 0 0 0 3px rgba(74,140,92,0.12); }
+    form textarea { min-height: 130px; }
+    form button {
+      background: var(--fern); color: var(--white); border: none;
+      padding: 14px 32px; border-radius: 40px;
+      font-family: 'Jost', sans-serif; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; align-self: flex-start; letter-spacing: 0.05em;
+      transition: background 0.25s, transform 0.2s, box-shadow 0.25s;
+      box-shadow: 0 4px 20px rgba(74,140,92,0.3);
+    }
+    form button:hover { background: var(--moss); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(74,140,92,0.4); }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--ink); color: var(--mist);
+      text-align: center; padding: 2rem;
+      font-size: 0.8rem; letter-spacing: 0.06em; opacity: 0.9;
+    }
+    footer a { color: var(--sage); text-decoration: none; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      nav { padding: 0 1.2rem; }
+      .nav-links { display: none; }
+      .about-grid, .contact-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+      .gallery-masonry { columns: 2 160px; }
+      #mini-canvas-wrap { height: 280px; }
+    }
+    @media (max-width: 480px) {
+      .hero-cta { flex-direction: column; align-items: center; }
+      .gallery-masonry { columns: 1; }
+    }
+
+    /* ── SCROLL REVEAL ── */
+    .reveal {
+      opacity: 0; transform: translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.22s; }
+    .reveal-delay-3 { transition-delay: 0.34s; }
+  </style>
+</head>
+<body>
+
+  <div id="tree-tooltip"></div>
+
+  <!-- ══ NAV ══ -->
+  <nav>
+    <a href="#hero" class="nav-logo">
+      UNLV <span>Circle K</span><br>
+      <span style="font-size:0.68rem;font-family:'Jost',sans-serif;font-weight:300;letter-spacing:0.12em;color:rgba(200,223,208,0.45);">Moonlight Division</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#about">About</a></li>
+      <li><a href="#events">Events</a></li>
+      <li><a href="#board">Board</a></li>
+      <li><a href="#viewer-section">3D Grove</a></li>
+      <li><a href="#gallery">Gallery</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="nav-socials">
+      <a href="https://www.instagram.com/unlvcki/" target="_blank">Instagram</a>
+      <a href="https://discord.com/invite/2Pw9Gv4" target="_blank">Discord</a>
+    </div>
+  </nav>
+
+  <!-- ══ HERO with 3D FOREST ══ -->
+  <section id="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-badge">2024 – 2025 Academic Year</div>
+      <h1 class="hero-title">
+        Where <em>Service</em><br>Takes Root
+      </h1>
+      <p class="hero-sub">
+        UNLV's Circle K International chapter — growing community, leadership, and fellowship in the Moonlight Division.
+      </p>
+      <div class="hero-cta">
+        <a href="#join" class="btn-primary">Join the Club</a>
+        <a href="#events" class="btn-outline">Upcoming Events →</a>
+      </div>
+    </div>
+    <div class="scroll-hint">Explore</div>
+  </section>
+
+  <!-- ══ ABOUT ══ -->
+  <section id="about">
+    <div class="section-inner">
+      <div class="about-grid">
+        <div class="about-text reveal">
+          <div class="section-label">Who We Are</div>
+          <h2 class="section-title">Growing Together in Service</h2>
+          <p>Welcome to UNLV Circle K International — a student-led service organization dedicated to making a difference on campus and in our greater Las Vegas community. We're part of the Moonlight Division and proud to be one of the most active CKI chapters in the district.</p>
+          <p>Whether you're passionate about volunteering, developing leadership skills, or just want to meet amazing people — Circle K is your community. We hope to see you at a future general meeting!!! ^_^</p>
+          <div style="margin-top:2rem;"><a href="#join" class="btn-primary">Learn How to Join</a></div>
+        </div>
+        <div class="about-pillars">
+          <div class="pillar-card reveal reveal-delay-1">
+            <h4>🌿 Service</h4>
+            <p>Giving back to our campus and community through hands-on volunteering and outreach initiatives throughout the year.</p>
+          </div>
+          <div class="pillar-card reveal reveal-delay-2">
+            <h4>✨ Leadership</h4>
+            <p>Developing the skills and confidence to lead both inside and outside of Circle K — shaping tomorrow's change-makers.</p>
+          </div>
+          <div class="pillar-card reveal reveal-delay-3">
+            <h4>🤝 Fellowship</h4>
+            <p>Building lifelong friendships and a supportive family of like-minded peers who share a passion for making a difference.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ EVENTS ══ -->
+  <section id="events">
+    <div class="section-inner">
+      <div class="section-label reveal">What's Happening</div>
+      <h2 class="section-title reveal">This Week's Schedule</h2>
+      <div class="week-strip">
+        <div class="day-card reveal reveal-delay-1">
+          <div class="day-date">MON</div>
+          <div class="day-name">02/17</div>
+          <ul class="day-events"><li class="no-event">No Events — President's Day</li></ul>
+        </div>
+        <div class="day-card reveal reveal-delay-1">
+          <div class="day-date">TUE</div>
+          <div class="day-name">02/18</div>
+          <ul class="day-events"><li>Scrapbooking Session<br><small style="color:#7ab893">SORCE · 3–6 PM PST</small></li></ul>
+        </div>
+        <div class="day-card reveal reveal-delay-2">
+          <div class="day-date">WED</div>
+          <div class="day-name">02/19</div>
+          <ul class="day-events"><li>General Meeting &amp; Elections<br><small style="color:#7ab893">6:00–7:00 PM PST</small></li></ul>
+        </div>
+        <div class="day-card reveal reveal-delay-2">
+          <div class="day-date">THU</div>
+          <div class="day-name">02/20</div>
+          <ul class="day-events">
+            <li>Fundraising Committee<br><small style="color:#7ab893">1:00–2:00 PM PST</small></li>
+            <li>Scrapbook Workshop<br><small style="color:#7ab893">2:30–4:00 PM PST</small></li>
+          </ul>
+        </div>
+        <div class="day-card reveal reveal-delay-3">
+          <div class="day-date">FRI</div>
+          <div class="day-name">02/21</div>
+          <ul class="day-events"><li class="no-event">No Events</li></ul>
+        </div>
+        <div class="day-card reveal reveal-delay-3" style="border-style:dashed;display:flex;align-items:center;justify-content:center;min-height:130px;">
+          <span style="color:rgba(122,184,147,0.4);font-size:0.85rem;font-style:italic;">+ Add Event</span>
+        </div>
+      </div>
+      <div style="margin-top:2.5rem;display:flex;gap:1.5rem;flex-wrap:wrap;" class="reveal">
+        <a href="http://www.cnhcirclek.org/committees/district-convention-committee/" target="_blank" class="btn-outline" style="border-color:rgba(122,184,147,0.35);color:var(--mist);">What is DCON? →</a>
+        <a href="https://www.circlek.org/events/convention/" target="_blank" class="btn-outline" style="border-color:rgba(122,184,147,0.35);color:var(--mist);">What is ICON? →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ BOARD ══ -->
+  <section id="board">
+    <div class="section-inner">
+      <div class="section-label reveal">Meet the Team</div>
+      <h2 class="section-title reveal">This Year's Board</h2>
+      <div class="board-grid">
+        <div class="member-card reveal reveal-delay-1">
+          <div class="member-avatar" style="background:linear-gradient(135deg,#c8dfd0,#4a8c5c);"></div>
+          <div class="member-name">Your Name</div>
+          <div class="member-role">President</div>
+        </div>
+        <div class="member-card reveal reveal-delay-1">
+          <div class="member-avatar" style="background:linear-gradient(135deg,#7ab893,#2d5a3d);"></div>
+          <div class="member-name">Your Name</div>
+          <div class="member-role">Vice President</div>
+        </div>
+        <div class="member-card reveal reveal-delay-2">
+          <div class="member-avatar" style="background:linear-gradient(135deg,#d4a843,#8b6f47);"></div>
+          <div class="member-name">Your Name</div>
+          <div class="member-role">Secretary</div>
+        </div>
+        <div class="member-card reveal reveal-delay-2">
+          <div class="member-avatar" style="background:linear-gradient(135deg,#2d5a3d,#1a3a2a);"></div>
+          <div class="member-name">Your Name</div>
+          <div class="member-role">Treasurer</div>
+        </div>
+        <div class="member-card reveal reveal-delay-3">
+          <div class="member-avatar" style="background:linear-gradient(135deg,#e8f4ec,#7ab893);"></div>
+          <div class="member-name">Your Name</div>
+          <div class="member-role">Service Chair</div>
+        </div>
+        <div class="member-card reveal reveal-delay-3">
+          <div class="member-avatar" style="background:linear-gradient(135deg,#4a8c5c,#1a3a2a);"></div>
+          <div class="member-name">Your Name</div>
+          <div class="member-role">Fundraising Chair</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ 3D INTERACTIVE GROVE ══ -->
+  <section id="viewer-section">
+    <div class="section-inner">
+      <div class="section-label reveal" style="justify-content:center;">Interactive Experience</div>
+      <h2 class="section-title reveal" style="text-align:center;">The Circle K Grove</h2>
+      <p class="reveal" style="text-align:center;color:#4a6a55;font-weight:300;max-width:500px;margin:0 auto;line-height:1.75;">
+        Our community, like a forest, grows stronger together. Drag to explore — click a tree to discover one of our three pillars.
+      </p>
+      <div id="mini-canvas-wrap" class="reveal">
+        <canvas id="mini-canvas"></canvas>
+      </div>
+      <p class="viewer-hint reveal">🖱 Drag to rotate · Click trees to explore</p>
+    </div>
+  </section>
+
+  <!-- ══ GALLERY ══ -->
+  <section id="gallery">
+    <div class="section-inner">
+      <div class="section-label reveal">Memories</div>
+      <h2 class="section-title reveal">Past Events &amp; Meetings</h2>
+      <div class="gallery-masonry">
+        <div class="gallery-item reveal"><div class="gallery-ph" style="height:200px;background:linear-gradient(135deg,#c8dfd0,#4a8c5c);">Photo 1</div></div>
+        <div class="gallery-item reveal reveal-delay-1"><div class="gallery-ph" style="height:150px;background:linear-gradient(135deg,#2d5a3d,#7ab893);">Photo 2</div></div>
+        <div class="gallery-item reveal reveal-delay-2"><div class="gallery-ph" style="height:180px;background:linear-gradient(135deg,#d4a843,#4a8c5c);">Photo 3</div></div>
+        <div class="gallery-item reveal"><div class="gallery-ph" style="height:220px;background:linear-gradient(135deg,#1a3a2a,#4a8c5c);">Photo 4</div></div>
+        <div class="gallery-item reveal reveal-delay-1"><div class="gallery-ph" style="height:160px;background:linear-gradient(135deg,#c8dfd0,#2d5a3d);">Photo 5</div></div>
+        <div class="gallery-item reveal reveal-delay-2"><div class="gallery-ph" style="height:200px;background:linear-gradient(135deg,#4a8c5c,#d4a843);">Photo 6</div></div>
+        <div class="gallery-item reveal"><div class="gallery-ph" style="height:170px;background:linear-gradient(135deg,#8b6f47,#1a3a2a);">Photo 7</div></div>
+        <div class="gallery-item reveal reveal-delay-1"><div class="gallery-ph" style="height:140px;background:linear-gradient(135deg,#7ab893,#1a3a2a);">Photo 8</div></div>
+        <div class="gallery-item reveal reveal-delay-2"><div class="gallery-ph" style="height:190px;background:linear-gradient(135deg,#2d5a3d,#d4a843);">Photo 9</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ JOIN ══ -->
+  <section id="join">
+    <div class="section-inner" style="text-align:center;">
+      <div class="section-label reveal" style="justify-content:center;color:var(--sage);">
+        <span style="width:28px;height:2px;background:var(--sage);display:inline-block;"></span>
+        Become a Member
+      </div>
+      <h2 class="section-title reveal" style="color:var(--white);">Ready to Make a Difference?</h2>
+      <p class="reveal">Joining UNLV Circle K is simple! Attend one of our general meetings and fill out our membership form. We welcome students from all majors and backgrounds.</p>
+      <div class="reveal" style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+        <a href="#contact" class="btn-primary">Get in Touch</a>
+        <a href="#" class="btn-outline" style="border-color:rgba(200,223,208,0.35);color:var(--mist);">Membership Form →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ CONTACT ══ -->
+  <section id="contact">
+    <div class="section-inner">
+      <div class="contact-grid">
+        <div class="contact-info reveal">
+          <div class="section-label">Reach Out</div>
+          <h2 class="section-title">Contact Us</h2>
+          <p>Have questions about Circle K or want to get involved? We'd love to hear from you. Reach out via the form or find us on social media!</p>
+          <p>📍 University of Nevada, Las Vegas</p>
+          <p>📧 <a href="mailto:unlvcki@gmail.com">unlvcki@gmail.com</a></p>
+          <div class="socials-list">
+            <a href="https://www.facebook.com/groups/246838475401151" target="_blank" class="social-link"><div class="social-icon">f</div> Facebook Group</a>
+            <a href="https://www.tiktok.com/@unlvcki" target="_blank" class="social-link"><div class="social-icon">♪</div> TikTok · @unlvcki</a>
+            <a href="https://www.instagram.com/unlvcki/" target="_blank" class="social-link"><div class="social-icon">◎</div> Instagram · @unlvcki</a>
+            <a href="https://discord.com/invite/2Pw9Gv4" target="_blank" class="social-link"><div class="social-icon">#</div> Discord Server</a>
+          </div>
+        </div>
+        <div class="reveal reveal-delay-1">
+          <form onsubmit="event.preventDefault();alert('Message sent! We\'ll get back to you soon. 🌿')">
+            <input type="text" placeholder="Your Name" required />
+            <input type="email" placeholder="Email Address" required />
+            <input type="text" placeholder="Subject" />
+            <textarea placeholder="Your message..."></textarea>
+            <button type="submit">Send Message 🌿</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    <p>© 2024–2025 UNLV Circle K International · Moonlight Division · <a href="https://www.circlek.org" target="_blank">circlek.org</a></p>
+    <p style="margin-top:0.5rem;opacity:0.45;">Designed with 🌿 for the UNLV CKI community</p>
+  </footer>
+
+<script>
+// ═══════════════════════════════════════════════
+//  HERO 3D FOREST — Three.js
+// ═══════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('hero-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.9;
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x0a1c12, 0.045);
+
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
+  camera.position.set(0, 4, 18);
+  camera.lookAt(0, 2, 0);
+
+  function resize() {
+    const hero = document.getElementById('hero');
+    const w = hero.offsetWidth, h = hero.offsetHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // LIGHTS
+  const ambient = new THREE.AmbientLight(0x1a3a2a, 1.2);
+  scene.add(ambient);
+  const moon = new THREE.DirectionalLight(0xc8e8d8, 1.8);
+  moon.position.set(5, 20, 8);
+  moon.castShadow = true;
+  moon.shadow.mapSize.set(1024, 1024);
+  scene.add(moon);
+  const warm = new THREE.PointLight(0xd4a843, 1.2, 30);
+  warm.position.set(-4, 3, 5);
+  scene.add(warm);
+  const rimLight = new THREE.DirectionalLight(0x4a8c5c, 0.8);
+  rimLight.position.set(-8, 6, -5);
+  scene.add(rimLight);
+
+  // GROUND
+  const groundGeo = new THREE.PlaneGeometry(80, 80, 1, 1);
+  const groundMat = new THREE.MeshLambertMaterial({ color: 0x0d2016 });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // HELPER: make a tree
+  function makeTree(x, z, scale, colorTrunk, colorLeaf, leafLayers) {
+    const group = new THREE.Group();
+
+    // trunk
+    const tGeo = new THREE.CylinderGeometry(0.12 * scale, 0.2 * scale, 2 * scale, 7);
+    const tMat = new THREE.MeshLambertMaterial({ color: colorTrunk });
+    const trunk = new THREE.Mesh(tGeo, tMat);
+    trunk.position.y = scale;
+    trunk.castShadow = true;
+    group.add(trunk);
+
+    // foliage cones
+    const layers = leafLayers || 3;
+    for (let i = 0; i < layers; i++) {
+      const r = (layers - i) * 0.6 * scale + 0.3;
+      const h = 1.4 * scale;
+      const cGeo = new THREE.ConeGeometry(r, h, 8);
+      const cMat = new THREE.MeshLambertMaterial({ color: colorLeaf });
+      const cone = new THREE.Mesh(cGeo, cMat);
+      cone.position.y = 2 * scale + i * (h * 0.55);
+      cone.castShadow = true;
+      group.add(cone);
+    }
+
+    group.position.set(x, 0, z);
+    return group;
+  }
+
+  // TREE COLORS
+  const treePalette = [
+    [0x3d2210, 0x1a4a2a],
+    [0x4a2e18, 0x2d6a3d],
+    [0x3a2010, 0x3a7a50],
+    [0x5a3620, 0x156330],
+    [0x3d2210, 0x4a8c5c],
+  ];
+
+  const trees = [];
+  // dense forest ring
+  const positions = [
+    [-8, -8], [8, -8], [-12, -4], [12, -4],
+    [-6, -14], [6, -14], [-14, -10], [14, -10],
+    [-10, -18], [10, -18], [0, -16],
+    [-16, -6], [16, -6],
+    [-4, -20], [4, -20],
+    [-18, -14], [18, -14],
+    [-2, -12], [2, -12],
+    [-7, -6], [7, -6],
+  ];
+  positions.forEach(([x, z], i) => {
+    const pal = treePalette[i % treePalette.length];
+    const s = 0.7 + Math.random() * 0.8;
+    const t = makeTree(x, z, s, pal[0], pal[1], 3 + Math.floor(Math.random() * 2));
+    scene.add(t);
+    trees.push(t);
+  });
+
+  // FLOATING PARTICLES (fireflies / spores)
+  const particleCount = 120;
+  const pGeo = new THREE.BufferGeometry();
+  const pPos = new Float32Array(particleCount * 3);
+  const pPhase = new Float32Array(particleCount);
+  for (let i = 0; i < particleCount; i++) {
+    pPos[i * 3]     = (Math.random() - 0.5) * 30;
+    pPos[i * 3 + 1] = Math.random() * 8;
+    pPos[i * 3 + 2] = (Math.random() - 0.5) * 20 - 5;
+    pPhase[i] = Math.random() * Math.PI * 2;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  const pMat = new THREE.PointsMaterial({ color: 0xd4e8a0, size: 0.08, transparent: true, opacity: 0.7 });
+  const particles = new THREE.Points(pGeo, pMat);
+  scene.add(particles);
+
+  // MOON
+  const moonGeo = new THREE.SphereGeometry(1.8, 20, 20);
+  const moonMat = new THREE.MeshBasicMaterial({ color: 0xe8f4ec });
+  const moonMesh = new THREE.Mesh(moonGeo, moonMat);
+  moonMesh.position.set(6, 18, -15);
+  scene.add(moonMesh);
+
+  // MOON GLOW ring
+  const glowGeo = new THREE.SphereGeometry(2.4, 16, 16);
+  const glowMat = new THREE.MeshBasicMaterial({ color: 0xc8dfd0, transparent: true, opacity: 0.12, side: THREE.BackSide });
+  moonMesh.add(new THREE.Mesh(glowGeo, glowMat));
+
+  // CAMERA MOUSE PARALLAX
+  let targetX = 0, targetY = 0;
+  const heroEl = document.getElementById('hero');
+  heroEl.addEventListener('mousemove', (e) => {
+    const rect = heroEl.getBoundingClientRect();
+    targetX = ((e.clientX - rect.left) / rect.width - 0.5) * 3;
+    targetY = ((e.clientY - rect.top)  / rect.height - 0.5) * 1.5;
+  });
+
+  // TOUCH drag for mobile
+  let isDragging = false, lastTouchX = 0;
+  heroEl.addEventListener('touchstart', e => { isDragging = true; lastTouchX = e.touches[0].clientX; });
+  heroEl.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - lastTouchX;
+    targetX += dx * 0.01;
+    lastTouchX = e.touches[0].clientX;
+  });
+  heroEl.addEventListener('touchend', () => isDragging = false);
+
+  let camX = 0, camY = 0;
+
+  // ANIMATE
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = clock.getElapsedTime();
+
+    // sway trees
+    trees.forEach((tree, i) => {
+      tree.rotation.z = Math.sin(t * 0.4 + i * 0.7) * 0.025;
+    });
+
+    // fireflies
+    const pos = pGeo.attributes.position.array;
+    for (let i = 0; i < particleCount; i++) {
+      pos[i * 3 + 1] += Math.sin(t + pPhase[i]) * 0.003;
+      pos[i * 3]     += Math.cos(t * 0.5 + pPhase[i]) * 0.002;
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    pMat.opacity = 0.4 + Math.sin(t * 0.8) * 0.3;
+
+    // camera parallax
+    camX += (targetX - camX) * 0.04;
+    camY += (targetY - camY) * 0.04;
+    camera.position.x = camX;
+    camera.position.y = 4 - camY * 0.5;
+    camera.lookAt(0, 2, 0);
+
+    // moon pulse
+    moonMesh.scale.setScalar(1 + Math.sin(t * 0.5) * 0.02);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+})();
+
+
+// ═══════════════════════════════════════════════
+//  MINI 3D GROVE (pillars explorer)
+// ═══════════════════════════════════════════════
+(function() {
+  const canvas2 = document.getElementById('mini-canvas');
+  const wrap = document.getElementById('mini-canvas-wrap');
+  const tooltip = document.getElementById('tree-tooltip');
+
+  const renderer2 = new THREE.WebGLRenderer({ canvas: canvas2, antialias: true, alpha: true });
+  renderer2.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer2.shadowMap.enabled = true;
+  renderer2.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer2.toneMappingExposure = 1.0;
+
+  const scene2 = new THREE.Scene();
+  scene2.background = new THREE.Color(0x0d2016);
+  scene2.fog = new THREE.FogExp2(0x0d2016, 0.06);
+
+  const camera2 = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camera2.position.set(0, 6, 14);
+  camera2.lookAt(0, 1, 0);
+
+  function resize2() {
+    const w = wrap.offsetWidth, h = wrap.offsetHeight;
+    renderer2.setSize(w, h);
+    camera2.aspect = w / h;
+    camera2.updateProjectionMatrix();
+  }
+  resize2();
+  window.addEventListener('resize', resize2);
+
+  // LIGHTS
+  scene2.add(new THREE.AmbientLight(0x1a3a2a, 1.5));
+  const sun2 = new THREE.DirectionalLight(0xd0e8c8, 2.2);
+  sun2.position.set(4, 14, 6);
+  sun2.castShadow = true;
+  scene2.add(sun2);
+  const fill2 = new THREE.PointLight(0xd4a843, 1.5, 20);
+  fill2.position.set(0, 5, 8);
+  scene2.add(fill2);
+
+  // GROUND
+  const g2 = new THREE.Mesh(
+    new THREE.CircleGeometry(14, 40),
+    new THREE.MeshLambertMaterial({ color: 0x112418 })
+  );
+  g2.rotation.x = -Math.PI / 2;
+  g2.receiveShadow = true;
+  scene2.add(g2);
+
+  // GROUND RING detail
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(4.5, 4.7, 48),
+    new THREE.MeshBasicMaterial({ color: 0x2d5a3d, side: THREE.DoubleSide })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.01;
+  scene2.add(ring);
+
+  // PILLAR TREES DATA
+  const pillars = [
+    { label: '🌿 Service', sub: 'Volunteering & outreach in the community', angle: Math.PI * 1.5, color: 0x2a7a4a, trunk: 0x3d2210 },
+    { label: '✨ Leadership', sub: 'Building tomorrow\'s change-makers', angle: Math.PI * 0.833, color: 0xd4a843, trunk: 0x4a2e18 },
+    { label: '🤝 Fellowship', sub: 'Lifelong friendships & community', angle: Math.PI * 0.167, color: 0x7ab893, trunk: 0x3a2010 },
+  ];
+
+  const clickableTrees = [];
+
+  pillars.forEach(({ label, sub, angle, color, trunk }) => {
+    const r = 4.8;
+    const x = Math.cos(angle) * r;
+    const z = Math.sin(angle) * r;
+    const group = new THREE.Group();
+
+    // trunk
+    const tGeo = new THREE.CylinderGeometry(0.18, 0.28, 2.8, 8);
+    const tMat = new THREE.MeshLambertMaterial({ color: trunk });
+    const trunkMesh = new THREE.Mesh(tGeo, tMat);
+    trunkMesh.position.y = 1.4;
+    trunkMesh.castShadow = true;
+    group.add(trunkMesh);
+
+    // 3 foliage layers
+    [0, 1, 2].forEach(i => {
+      const rad = (3 - i) * 0.75 + 0.4;
+      const cGeo = new THREE.ConeGeometry(rad, 1.8, 9);
+      const cMat = new THREE.MeshLambertMaterial({ color });
+      const cone = new THREE.Mesh(cGeo, cMat);
+      cone.position.y = 2.8 + i * 1.1;
+      cone.castShadow = true;
+      group.add(cone);
+    });
+
+    // glowing orb at top
+    const orbGeo = new THREE.SphereGeometry(0.32, 12, 12);
+    const orbMat = new THREE.MeshBasicMaterial({ color: 0xe8f4ec, transparent: true, opacity: 0.9 });
+    const orb = new THREE.Mesh(orbGeo, orbMat);
+    orb.position.y = 6.5;
+    group.add(orb);
+
+    // invisible click sphere
+    const hitGeo = new THREE.SphereGeometry(2.5, 8, 8);
+    const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+    const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+    hitMesh.position.y = 3;
+    hitMesh.userData = { label, sub };
+    group.add(hitMesh);
+    clickableTrees.push(hitMesh);
+
+    group.position.set(x, 0, z);
+    scene2.add(group);
+
+    // small ground disc marker
+    const disc = new THREE.Mesh(
+      new THREE.CircleGeometry(0.6, 24),
+      new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, transparent: true, opacity: 0.25 })
+    );
+    disc.rotation.x = -Math.PI / 2;
+    disc.position.set(x, 0.02, z);
+    scene2.add(disc);
+  });
+
+  // CENTER TREE (main CKI)
+  const cGroup = new THREE.Group();
+  const cTrunk = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.22, 0.35, 3.5, 10),
+    new THREE.MeshLambertMaterial({ color: 0x3d2210 })
+  );
+  cTrunk.position.y = 1.75; cTrunk.castShadow = true;
+  cGroup.add(cTrunk);
+  [0,1,2,3].forEach(i => {
+    const r = (4 - i) * 0.8 + 0.5;
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(r, 2, 10),
+      new THREE.MeshLambertMaterial({ color: 0x1a5a35 })
+    );
+    cone.position.y = 3.5 + i * 1.2;
+    cone.castShadow = true;
+    cGroup.add(cone);
+  });
+  const topOrb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.45, 16, 16),
+    new THREE.MeshBasicMaterial({ color: 0xd4a843 })
+  );
+  topOrb.position.y = 9.2;
+  cGroup.add(topOrb);
+  scene2.add(cGroup);
+
+  // BACKGROUND TREES
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2;
+    const r = 9 + Math.random() * 3;
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const s = 0.5 + Math.random() * 0.5;
+    const bg = new THREE.Group();
+    const btMat = new THREE.MeshLambertMaterial({ color: 0x3d2210 });
+    const bt = new THREE.Mesh(new THREE.CylinderGeometry(0.1*s, 0.18*s, 2*s, 6), btMat);
+    bt.position.y = s; bg.add(bt);
+    const bcMat = new THREE.MeshLambertMaterial({ color: 0x1a3a2a });
+    for (let j = 0; j < 3; j++) {
+      const bc = new THREE.Mesh(new THREE.ConeGeometry((3-j)*0.5*s, 1.2*s, 7), bcMat);
+      bc.position.y = 2*s + j*0.8*s;
+      bg.add(bc);
+    }
+    bg.position.set(x, 0, z);
+    scene2.add(bg);
+  }
+
+  // FIREFLIES
+  const ff = 60;
+  const ffGeo = new THREE.BufferGeometry();
+  const ffPos = new Float32Array(ff * 3);
+  const ffPhase = new Float32Array(ff);
+  for (let i = 0; i < ff; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const r = Math.random() * 10;
+    ffPos[i*3] = Math.cos(a)*r; ffPos[i*3+1] = Math.random()*5 + 0.5; ffPos[i*3+2] = Math.sin(a)*r;
+    ffPhase[i] = Math.random() * Math.PI * 2;
+  }
+  ffGeo.setAttribute('position', new THREE.BufferAttribute(ffPos, 3));
+  const ffMat = new THREE.PointsMaterial({ color: 0xc8e890, size: 0.1, transparent: true, opacity: 0.8 });
+  scene2.add(new THREE.Points(ffGeo, ffMat));
+
+  // MOUSE + DRAG ORBIT
+  let rotY = 0, rotX = 0.15;
+  let isDrag = false, lastX2 = 0, lastY2 = 0;
+  let velX = 0;
+
+  canvas2.addEventListener('mousedown', e => { isDrag = true; lastX2 = e.clientX; lastY2 = e.clientY; });
+  window.addEventListener('mouseup', () => { isDrag = false; });
+  window.addEventListener('mousemove', e => {
+    if (!isDrag) return;
+    const dx = e.clientX - lastX2;
+    velX = dx * 0.012;
+    rotY += velX;
+    rotX += (e.clientY - lastY2) * 0.006;
+    rotX = Math.max(-0.1, Math.min(0.7, rotX));
+    lastX2 = e.clientX; lastY2 = e.clientY;
+  });
+  canvas2.addEventListener('touchstart', e => { isDrag = true; lastX2 = e.touches[0].clientX; });
+  canvas2.addEventListener('touchmove', e => {
+    if (!isDrag) return;
+    rotY += (e.touches[0].clientX - lastX2) * 0.012;
+    lastX2 = e.touches[0].clientX;
+  });
+  canvas2.addEventListener('touchend', () => { isDrag = false; });
+
+  // CLICK on trees
+  const raycaster = new THREE.Raycaster();
+  const mouse2 = new THREE.Vector2();
+  canvas2.addEventListener('click', e => {
+    const rect = canvas2.getBoundingClientRect();
+    mouse2.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse2.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse2, camera2);
+    const hits = raycaster.intersectObjects(clickableTrees);
+    if (hits.length > 0) {
+      const d = hits[0].object.userData;
+      showPillarPopup(d.label, d.sub);
+    }
+  });
+
+  // HOVER tooltip
+  canvas2.addEventListener('mousemove', e => {
+    const rect = canvas2.getBoundingClientRect();
+    mouse2.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse2.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse2, camera2);
+    const hits = raycaster.intersectObjects(clickableTrees);
+    if (hits.length > 0) {
+      tooltip.style.opacity = '1';
+      tooltip.style.left = (e.clientX + 14) + 'px';
+      tooltip.style.top  = (e.clientY - 30) + 'px';
+      tooltip.textContent = hits[0].object.userData.label;
+      canvas2.style.cursor = 'pointer';
+    } else {
+      tooltip.style.opacity = '0';
+      canvas2.style.cursor = isDrag ? 'grabbing' : 'grab';
+    }
+  });
+
+  // POPUP
+  function showPillarPopup(label, sub) {
+    const existing = document.getElementById('pillar-popup');
+    if (existing) existing.remove();
+    const popup = document.createElement('div');
+    popup.id = 'pillar-popup';
+    Object.assign(popup.style, {
+      position:'fixed', top:'50%', left:'50%',
+      transform:'translate(-50%,-50%) scale(0.85)',
+      background:'rgba(18,42,28,0.96)',
+      backdropFilter:'blur(16px)',
+      border:'1px solid rgba(122,184,147,0.35)',
+      borderRadius:'20px', padding:'2rem 2.5rem',
+      zIndex:'500', textAlign:'center',
+      boxShadow:'0 24px 80px rgba(0,0,0,0.6)',
+      transition:'transform 0.3s, opacity 0.3s',
+      opacity:'0', maxWidth:'340px', width:'90%'
+    });
+    popup.innerHTML = `
+      <div style="font-size:2.2rem;margin-bottom:0.8rem;">${label.split(' ')[0]}</div>
+      <div style="font-family:'Playfair Display',serif;color:#e8f4ec;font-size:1.3rem;margin-bottom:0.6rem;">${label.replace(/^.\s/,'')}</div>
+      <div style="color:#c8dfd0;font-size:0.9rem;line-height:1.65;font-weight:300;">${sub}</div>
+      <button onclick="this.parentElement.remove()" style="margin-top:1.4rem;background:#4a8c5c;color:#fff;border:none;padding:8px 22px;border-radius:30px;cursor:pointer;font-family:'Jost',sans-serif;font-size:0.85rem;letter-spacing:0.06em;">Close</button>
+    `;
+    document.body.appendChild(popup);
+    requestAnimationFrame(() => { popup.style.opacity='1'; popup.style.transform='translate(-50%,-50%) scale(1)'; });
+  }
+
+  // ANIMATE MINI
+  const clock2 = new THREE.Clock();
+  function animate2() {
+    requestAnimationFrame(animate2);
+    const t = clock2.getElapsedTime();
+
+    if (!isDrag) { velX *= 0.96; rotY += velX + 0.004; }
+
+    const dist = 14;
+    camera2.position.x = Math.sin(rotY) * Math.cos(rotX) * dist;
+    camera2.position.y = Math.sin(rotX) * dist;
+    camera2.position.z = Math.cos(rotY) * Math.cos(rotX) * dist;
+    camera2.lookAt(0, 2, 0);
+
+    // sway center tree
+    cGroup.rotation.z = Math.sin(t * 0.5) * 0.02;
+    topOrb.material.opacity = 0.7 + Math.sin(t * 2) * 0.3;
+
+    // fireflies
+    const fp = ffGeo.attributes.position.array;
+    for (let i = 0; i < ff; i++) {
+      fp[i*3+1] += Math.sin(t + ffPhase[i]) * 0.003;
+      fp[i*3]   += Math.cos(t*0.4 + ffPhase[i]) * 0.002;
+    }
+    ffGeo.attributes.position.needsUpdate = true;
+    ffMat.opacity = 0.5 + Math.sin(t) * 0.3;
+
+    renderer2.render(scene2, camera2);
+  }
+  animate2();
+})();
+
+
+// ═══════════════════════════════════════════════
+//  SCROLL REVEAL
+// ═══════════════════════════════════════════════
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.12 });
+revealEls.forEach(el => io.observe(el));
+</script>
+</body>
+</html>
